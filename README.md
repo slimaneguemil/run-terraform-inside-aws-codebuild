@@ -16,7 +16,16 @@ Choose a region, everything will be created in that region
 
 1 - run the cloudformation file
 -------------------------------
+aws cloudformation list-stacks --profile admin
+aws cloudformation create-change-set --change-set-name ChangeSet-82 --change-set-type UPDATE --stack-name terraform-codebuild --region eu-central-1 --template-body file://codebuild.yaml --capabilities CAPABILITY_NAMED_IAM --profile admin
+aws cloudformation describe-change-set  --change-set-name arn:aws:cloudformation:eu-central-1:519657433522:changeSet/ChangeSet-82/016569b3-2033-4d31-97bd-2da25bc0bf01
+aws cloudformation execute-change-set --change-set-name arn:aws:cloudformation:eu-central-1:519657433522:changeSet/ChangeSet-82/016569b3-2033-4d31-97bd-2da25bc0bf01
+aws cloudformation describe-stack-resources  --stack-name terraform-codebuild
 
+
+aws cloudformation update-stack --stack-name terraform-codebuild  --region eu-central-1 --template-body file://codebuild.yaml --capabilities CAPABILITY_NAMED_IAM --profile admin
+
+aws cloudformation describe-stack-events --stack-name terraform-codebuild
 This will create 3 objects:
 
 1. A codebuild role with administrator access

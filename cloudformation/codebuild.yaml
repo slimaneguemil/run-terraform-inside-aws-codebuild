@@ -1,0 +1,95 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'A codebuild system to run terraform '
+Parameters:
+  DataPartName:
+    Description: the data part name as appear in the cloudformation stack name
+    Type: String
+    Default: mydataname
+Resources:
+  BasicParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: "param_test"
+      Type: "String"
+      Value: "toto"
+      Description: "test parameter store in codebuild"
+      Tags:
+        "Project": "Run Terraform From CodeBuild"
+
+  S3StateAndSoftware:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName:
+        Fn::Join:
+          - "."
+          - - Ref: DataPartName
+            - Ref: AWS::Region
+            - terraform-state-software
+  Adminrole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName:
+        Fn::Join:
+          - "."
+          - - Ref: AWS::StackName
+            - Ref: AWS::Region
+            - codebuild
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - codebuild.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: "/"
+      Policies:
+        - PolicyName: adminaccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action: "*"
+                Effect: Allow
+                Resource: "*"
+  BuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name:
+        Fn::Join:
+          - _
+          - - Ref: AWS::StackName
+            - Ref: AWS::Region
+            - build_Application
+      Description: build the application part for cades using terraform
+      ServiceRole:
+        Ref: Adminrole
+      Artifacts:
+        Type: no_artifacts
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/python:2.7.12
+        EnvironmentVariables:
+          - Name: datapart
+            Value:
+              Ref: DataPartName
+          - Name: region
+            Value:
+              Ref: AWS::Region
+          - Name: applicationname
+            Value:
+              Ref: AWS::StackName
+          - Name: destroy
+            Value: 'False'
+          - Name: varName3
+            Value: param_test
+            Type: PARAMETER_STORE
+      Source:
+        Location: https://github.com/slimaneguemil/run-terraform-inside-aws-codebuild.git
+        Type: GITHUB
+      TimeoutInMinutes: 10
+      Tags:
+        - Key: Project
+          Value: Run Terraform From CodeBuild
